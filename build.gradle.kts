@@ -6,7 +6,7 @@ java {
 
 plugins {
     `java-library`
-    id("io.papermc.paperweight.userdev") version "1.7.2"
+    id("io.papermc.paperweight.userdev") version "2.0.0-beta.14"
 }
 
 dependencies {
@@ -20,7 +20,7 @@ tasks {
 
     compileJava {
         options.encoding = Charsets.UTF_8.name()
-        options.release.set(17)
+        options.release.set(21)
     }
 }
 
