@@ -458,6 +458,9 @@ public class Game {
         // update the tablist on game end
         this.showItemCollectedInTabList();
 
+        // fallen's fork: add log message showing the game ends
+        Game.getLogger().info("Game ended");
+
         String message = DIVIDER + "\n" + PREFIX;
 
         switch (winReason.getReason()) {
