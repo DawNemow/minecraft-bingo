@@ -152,6 +152,13 @@ public class Config {
      */
     private final boolean allowSpawnBiomeWithoutTree;
 
+    /**
+     * [fallen's fork]
+     * Enable the hold mode -- items which are not in the team players' inventories will be removed from the collected items
+     * Default: false
+     */
+    private final boolean holdMode;
+
     public Config(JavaPlugin plugin) throws IllegalArgumentException {
         plugin.saveDefaultConfig();
         
@@ -216,6 +223,7 @@ public class Config {
         quidditchGoldenSnitchBonus = config.getInt("quidditch-golden-snitch-bonus");
         allowMidGameJoin = config.getBoolean("allow-mid-game-join");
         allowSpawnBiomeWithoutTree = config.getBoolean("allow-spawn-biome-without-tree");
+        holdMode = config.getBoolean("hold-mode");
     }
 
     /**
@@ -364,6 +372,10 @@ public class Config {
 
     public boolean isAllowSpawnBiomeWithoutTree() {
         return allowSpawnBiomeWithoutTree;
+    }
+
+    public boolean isHoldMode() {
+        return holdMode;
     }
     // fallen's fork ends
 }

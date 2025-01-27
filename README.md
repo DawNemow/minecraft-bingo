@@ -24,6 +24,16 @@ but the team that triggers the bingo can get a Golden Snitch score bonus (can be
 - Add config `default-win-condition-is-quidditch`, to set the default mode from `lines` to `quidditch`
 - Add config `quidditch-golden-snitch-bonus` to adjust the extra bonus for the team who gets bingo (default `1`)
 
+### Hold Mode
+
+Hold mode is an extra feature switch that can be applied on any mode.
+With hold mode enabled, players need to hold their collected bingo items inside their inventory.
+If any collected bingo item is dropped, it will roll back to the uncollected state
+
+Items inside shulker boxes and bundles are also considered as "held by the player"
+
+- Add config `hold-mode` as the switch (default `False`)
+
 ### QOL++
 
 - Show num & row collected of all teams in tab list, so you don't have to count the dots in the bingo card

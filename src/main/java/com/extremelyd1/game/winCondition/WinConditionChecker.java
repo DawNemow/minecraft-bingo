@@ -47,12 +47,18 @@ public class WinConditionChecker {
      */
     private final int quidditchGoldenSnitchBonus;
 
+    /**
+     * If enabled, items which are not in the team players' inventories will be removed from the collected items
+     */
+    private final boolean holdMode;
+
     public WinConditionChecker(Config config) {
         this.numLinesToComplete = config.getDefaultNumLinesComplete();
         this.fullCard = false;
         this.completionsToLock = 0;
         this.quidditchMode = config.isDefaultWinConditionIsQuidditch();
         this.quidditchGoldenSnitchBonus = config.getQuidditchGoldenSnitchBonus();
+        this.holdMode = config.isHoldMode();
     }
 
     /**
@@ -287,8 +293,14 @@ public class WinConditionChecker {
         return numLinesToComplete;
     }
 
+    // fallen's fork: add "quidditch" mode
     public boolean isQuidditchMode() {
         return quidditchMode;
+    }
+
+    // fallen's fork: add "hold" mode
+    public boolean isHoldMode() {
+        return holdMode;
     }
 
     public void setFullCard() {

@@ -29,6 +29,11 @@ public class PlayerTeam extends Team {
         ++numCollected;
     }
 
+    // fallen's fork: add "hold" mode
+    public void decrementCollected() {
+        --numCollected;
+    }
+
     public int getNumCollected() {
         return numCollected;
     }

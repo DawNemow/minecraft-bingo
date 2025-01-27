@@ -38,6 +38,27 @@ public class SoundManager {
         }
     }
 
+    // fallen's fork: add "hold" mode
+    public void broadcastItemDropped(PlayerTeam team) {
+        for (Player player: Bukkit.getOnlinePlayers()) {
+            if (team.contains(player)) {
+                player.playSound(
+                        player.getLocation(),
+                        Sound.BLOCK_NOTE_BLOCK_COW_BELL,
+                        0.8f,
+                        0f
+                );
+            } else {
+                player.playSound(
+                        player.getLocation(),
+                        Sound.BLOCK_NOTE_BLOCK_BASS,
+                        1f,
+                        2f
+                );
+            }
+        }
+    }
+
     /**
      * Broadcast the start sound
      */

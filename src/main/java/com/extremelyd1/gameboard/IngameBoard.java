@@ -55,6 +55,10 @@ public class IngameBoard extends GameBoard {
                 "Game type: " + ChatColor.YELLOW + formatWinCondition(game.getWinConditionChecker())
         ));
 
+        // fallen's fork: add "hold" mode
+        if (game.getWinConditionChecker().isHoldMode()) {
+            this.boardEntries.add(new BoardEntry("Hold Mode: " + ChatColor.YELLOW + "True"));
+        }
         // fallen's fork: add for "quidditch" mode
         if (game.getWinConditionChecker().isQuidditchMode()) {
             this.boardEntries.add(new BoardEntry("Golden Snitch Bonus: " + ChatColor.YELLOW + game.getConfig().getQuidditchGoldenSnitchBonus()));

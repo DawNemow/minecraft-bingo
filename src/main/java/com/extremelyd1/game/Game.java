@@ -10,6 +10,7 @@ import com.extremelyd1.game.team.PlayerTeam;
 import com.extremelyd1.game.team.Team;
 import com.extremelyd1.game.team.TeamManager;
 import com.extremelyd1.game.timer.GameTimer;
+import com.extremelyd1.game.winCondition.HoldModeHelper;
 import com.extremelyd1.game.winCondition.WinConditionChecker;
 import com.extremelyd1.game.winCondition.WinReason;
 import com.extremelyd1.gameboard.GameBoardManager;
@@ -89,6 +90,9 @@ public class Game {
      */
     private final WinConditionChecker winConditionChecker;
 
+    // fallen's fork: add "hold" mode
+    private final HoldModeHelper holdModeHelper;
+
     /**
      * The sound manager instance
      */
@@ -154,6 +158,7 @@ public class Game {
         bingoItemMaterials.loadMaterials(getDataFolder());
 
         winConditionChecker = new WinConditionChecker(config);
+        holdModeHelper = new HoldModeHelper(this, winConditionChecker, teamManager);
 
         chatChannelController = new ChatChannelController();
 
@@ -396,6 +401,7 @@ public class Game {
             // for "quidditch" mode
             team.setGotGoldenSnitch(false);
         }
+        holdModeHelper.onGameStart();
 
         if (config.isTimerEnabled()) {
             // Start timer
@@ -645,6 +651,13 @@ public class Game {
                     teamManager.getActiveTeams()
             );
 
+            // fallen's fork: show num & row collected in tab list
+            // update the tablist on game end
+            this.showItemCollectedInTabList();
+
+            // fallen's fork: better bingo item display
+            bingoCard.getBingoCardInventory().rebuildInventory();
+
             if (winners.isEmpty()) {
                 // If the list is empty, the game is not finished yet
                 soundManager.broadcastItemCollected(collectorTeam);
@@ -659,8 +672,42 @@ public class Game {
                 );
             }
         }
+    }
 
-        // fallen's fork: show num & row collected in tab list
+    public void onMaterialDropped(PlayerTeam team, Material material) {
+	    if (!bingoCard.checkMaterialDrop(material, team)) {
+            return;
+        }
+
+        gameBoardManager.onItemCollected(team);
+
+        if (config.notifyOtherTeamCompletions()) {
+            // Broadcast a message of this collection
+            Bukkit.getServer().broadcast(
+                    Component.text(
+                            PREFIX +
+                                    team.getColor() + team.getName()
+                                    + ChatColor.WHITE + " team has dropped "
+                    ).append(
+                            Component.translatable(material.translationKey()).
+                                    color(NamedTextColor.AQUA)
+                    )
+            );
+        }
+
+        if (config.notifyOtherTeamCompletions() || winConditionChecker.getCompletionsToLock() > 0) {
+            // Update the cards of all players in all teams
+            for (PlayerTeam playerTeam : teamManager.getActiveTeams()) {
+                ItemUtil.updateBingoCard(bingoCard, playerTeam, bingoCardItemFactory);
+            }
+        } else {
+            // Update only the bingo card of the players in the team that collected the item
+            ItemUtil.updateBingoCard(bingoCard, team, bingoCardItemFactory);
+        }
+
+        soundManager.broadcastItemDropped(team);
+
+	    // fallen's fork: show num & row collected in tab list
         // update the tablist on game end
         this.showItemCollectedInTabList();
 
