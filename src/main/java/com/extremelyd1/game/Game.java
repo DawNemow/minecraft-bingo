@@ -592,6 +592,19 @@ public class Game {
         gameBoardManager.onPregameUpdate(numOnlinePlayers);
     }
 
+    // fallen's fork: add nested item support
+    public void onItemCollected(Player player, ItemStack itemStack) {
+        Team team = teamManager.getTeamByPlayer(player);
+        if (team == null || team.isSpectatorTeam()) {
+            getLogger().warning("Material collected by player without team");
+            return;
+        }
+
+        ItemUtil.iterateItemMaterialNested(itemStack, material -> {
+            this.onMaterialCollected(player, material);
+        });
+    }
+
     /**
      * When a material is collected by a player
      * Updates the bingo card of the player's team and ends the game if a card is completed

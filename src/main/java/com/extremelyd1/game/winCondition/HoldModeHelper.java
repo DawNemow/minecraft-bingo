@@ -3,16 +3,13 @@ package com.extremelyd1.game.winCondition;
 import com.extremelyd1.game.Game;
 import com.extremelyd1.game.team.PlayerTeam;
 import com.extremelyd1.game.team.TeamManager;
-import com.google.common.base.Joiner;
+import com.extremelyd1.util.ItemUtil;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.block.ShulkerBox;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.BlockStateMeta;
-import org.bukkit.inventory.meta.BundleMeta;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Map;
@@ -73,26 +70,9 @@ public class HoldModeHelper {
         }
     }
 
-    private static void nestedMaterialAdd(ItemStack itemStack, Consumer<Material> consumer) {
-        if (itemStack != null && !itemStack.isEmpty()) {
-            consumer.accept(itemStack.getType());
-            if (itemStack.getItemMeta() instanceof BlockStateMeta im) {
-	            if (im.getBlockState() instanceof ShulkerBox shulker) {
-                    for (ItemStack shulkerItem : shulker.getInventory()) {
-                        nestedMaterialAdd(shulkerItem, consumer);
-                    }
-                }
-            } else if (itemStack.getItemMeta() instanceof BundleMeta bm) {
-                for (ItemStack bundleItem : bm.getItems()) {
-                    nestedMaterialAdd(bundleItem, consumer);
-                }
-            }
-        }
-    }
-
     private static Set<Material> createInventorySnapshot(PlayerTeam team) {
         Set<Material> materials = Sets.newHashSet();
-        Consumer<ItemStack> add = itemStack -> nestedMaterialAdd(itemStack, materials::add);
+        Consumer<ItemStack> add = itemStack -> ItemUtil.iterateItemMaterialNested(itemStack, materials::add);
 
         for (Player player : team.getPlayers()) {
             player.getInventory().forEach(add);

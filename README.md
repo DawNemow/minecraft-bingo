@@ -46,6 +46,7 @@ Items inside shulker boxes and bundles are also considered as "held by the playe
 - Reset player time since reset stat on game start
 - Add in-game notification. When a player right-click or left-click the items displayed in the bingo card inventory, a message when be sent to notify the team.
 - Add a log message showing the game ends
+- Add nested item support: items inside shulker boxes or bundles are considered as collected as well
 
 ### Fixes
 

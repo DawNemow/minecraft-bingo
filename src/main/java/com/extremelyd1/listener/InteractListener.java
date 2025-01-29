@@ -291,6 +291,6 @@ public class InteractListener implements Listener {
             }
         }
 
-        game.onMaterialCollected(player, currentItem.getType());
+        game.onItemCollected(player, currentItem);
     }
 }

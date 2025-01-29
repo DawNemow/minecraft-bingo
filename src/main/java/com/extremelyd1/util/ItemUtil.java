@@ -3,8 +3,14 @@ package com.extremelyd1.util;
 import com.extremelyd1.bingo.BingoCard;
 import com.extremelyd1.bingo.map.BingoCardItemFactory;
 import com.extremelyd1.game.team.PlayerTeam;
+import org.bukkit.Material;
+import org.bukkit.block.ShulkerBox;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BlockStateMeta;
+import org.bukkit.inventory.meta.BundleMeta;
+
+import java.util.function.Consumer;
 
 public class ItemUtil {
 
@@ -74,4 +80,21 @@ public class ItemUtil {
         return null;
     }
 
+    // fallen's fork: add nested item support
+    public static void iterateItemMaterialNested(ItemStack itemStack, Consumer<Material> consumer) {
+        if (itemStack != null && !itemStack.isEmpty()) {
+            consumer.accept(itemStack.getType());
+            if (itemStack.getItemMeta() instanceof BlockStateMeta im) {
+                if (im.getBlockState() instanceof ShulkerBox shulker) {
+                    for (ItemStack shulkerItem : shulker.getInventory()) {
+                        iterateItemMaterialNested(shulkerItem, consumer);
+                    }
+                }
+            } else if (itemStack.getItemMeta() instanceof BundleMeta bm) {
+                for (ItemStack bundleItem : bm.getItems()) {
+                    iterateItemMaterialNested(bundleItem, consumer);
+                }
+            }
+        }
+    }
 }

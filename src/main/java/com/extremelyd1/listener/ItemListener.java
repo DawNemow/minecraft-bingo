@@ -60,10 +60,10 @@ public class ItemListener implements Listener {
             return;
         }
 
-        Material material = e.getItem().getItemStack().getType();
+        ItemStack itemStack = e.getItem().getItemStack();
         Player player = (Player) e.getEntity();
 
-        game.onMaterialCollected(player, material);
+        game.onItemCollected(player, itemStack);
     }
 
     @EventHandler
@@ -88,7 +88,7 @@ public class ItemListener implements Listener {
         }
 
         if (e.getItemStack() != null) {
-            game.onMaterialCollected(e.getPlayer(), e.getItemStack().getType());
+            game.onItemCollected(e.getPlayer(), e.getItemStack());
         }
     }
 
