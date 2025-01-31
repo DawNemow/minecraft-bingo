@@ -12,9 +12,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.Map;
-import java.util.Set;
+import javax.annotation.Nullable;
+import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 // fallen's fork: add "hold" mode
 public class HoldModeHelper {
@@ -23,7 +24,7 @@ public class HoldModeHelper {
 	private final WinConditionChecker winConditionChecker;
 	private final TeamManager teamManager;
 
-	private final Map<PlayerTeam, Set<Material>> inventorySnapshots = Maps.newHashMap();
+	private final Map<PlayerTeam, TeamInventorySnapshot> inventorySnapshots = Maps.newHashMap();
     private BukkitTask tickingTask = null;
 
 	public HoldModeHelper(Game game, WinConditionChecker winConditionChecker, TeamManager teamManager) {
@@ -57,34 +58,75 @@ public class HoldModeHelper {
         }
 
         for (PlayerTeam team : teams) {
-            Set<Material> oldSnapshot = inventorySnapshots.get(team);
-            Set<Material> newSnapshot = createInventorySnapshot(team);
+            TeamInventorySnapshot oldSnapshot = inventorySnapshots.get(team);
+            TeamInventorySnapshot newSnapshot = TeamInventorySnapshot.create(team, oldSnapshot);
             if (oldSnapshot != null) {
-                for (Material material : oldSnapshot) {
-                    if (!newSnapshot.contains(material)) {
-                        game.onMaterialDropped(team, material);
-                    }
+                Set<Material> droppedMaterials = oldSnapshot.diff(newSnapshot);
+                for (Material material : droppedMaterials) {
+                    game.onMaterialDropped(team, material);
                 }
             }
             inventorySnapshots.put(team, newSnapshot);
         }
     }
 
-    private static Set<Material> createInventorySnapshot(PlayerTeam team) {
-        Set<Material> materials = Sets.newHashSet();
-        Consumer<ItemStack> add = itemStack -> ItemUtil.iterateItemMaterialNested(itemStack, materials::add);
-
-        for (Player player : team.getPlayers()) {
-            player.getInventory().forEach(add);
-            add.accept(player.getItemOnCursor());
-        }
-        return materials;
-    }
-
     private void cancelTicking() {
         if (this.tickingTask != null) {
             this.tickingTask.cancel();
             this.tickingTask = null;
+        }
+    }
+
+    private static class TeamInventorySnapshot {
+        private final PlayerTeam team;
+        private final Set<Material> allMaterials;
+        private final Map<UUID, Set<Material>> playerMaterials;
+
+	    private TeamInventorySnapshot(PlayerTeam team, Map<UUID, Set<Material>> playerMaterials) {
+		    this.team = team;
+		    this.playerMaterials = playerMaterials;
+		    this.allMaterials = playerMaterials.values().stream().flatMap(Set::stream).collect(Collectors.toSet());
+	    }
+
+        public PlayerTeam getTeam() {
+            return team;
+        }
+
+        private static TeamInventorySnapshot create(PlayerTeam team, @Nullable TeamInventorySnapshot prev) {
+            if (prev == null) {
+                prev = empty(team);
+            }
+
+            Map<UUID, Set<Material>> snapshot = Maps.newHashMap();
+
+            for (Player player : team.getPlayers()) {
+                Set<Material> materials = Sets.newHashSet();
+                snapshot.put(player.getUniqueId(), materials);
+
+                Consumer<ItemStack> add = itemStack -> ItemUtil.iterateItemMaterialNested(itemStack, materials::add);
+                player.getInventory().forEach(add);
+                add.accept(player.getItemOnCursor());
+            }
+
+            // handle player log out -- keep it
+            for (UUID uuid : prev.playerMaterials.keySet()) {
+                if (!snapshot.containsKey(uuid)) {
+                    snapshot.put(uuid, prev.playerMaterials.get(uuid));
+                }
+            }
+
+            return new TeamInventorySnapshot(team, snapshot);
+        }
+
+        private static TeamInventorySnapshot empty(PlayerTeam team) {
+            return new TeamInventorySnapshot(team, Collections.emptyMap());
+        }
+
+        // returns this - other
+        public Set<Material> diff(TeamInventorySnapshot other) {
+            Set<Material> difference = Sets.newHashSet(allMaterials);
+            difference.removeAll(other.allMaterials);
+            return difference;
         }
     }
 }
