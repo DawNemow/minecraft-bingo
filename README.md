@@ -52,6 +52,7 @@ Items inside shulker boxes and bundles are also considered as "held by the playe
 
 - Fix double timer running by entering double `/start` and double game starting
 - Fix existing spectator player still being in survival mode when join in mid-game
+- Fix possible bingo card duplication after player respawn
 
 ## What is minecraft bingo?
 Minecraft Bingo is a gamemode in Minecraft in which teams battle in order to collect items on their bingo card.

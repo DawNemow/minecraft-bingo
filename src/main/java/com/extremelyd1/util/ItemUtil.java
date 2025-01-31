@@ -21,6 +21,11 @@ public class ItemUtil {
      */
     public static void updateBingoCard(BingoCard bingoCard, PlayerTeam team, BingoCardItemFactory factory) {
         for (Player player : team.getPlayers()) {
+            // fallen's fork: ensure no duplicated bingo card
+            if (player.isDead()) {
+                continue;
+            }
+
             boolean itemFound = false;
 
             // Loop over the contents of the player's inventory and try to find an existing bingo card item stack

@@ -4,6 +4,7 @@ import com.extremelyd1.game.Game;
 import com.extremelyd1.game.team.PlayerTeam;
 import com.extremelyd1.game.team.Team;
 import com.extremelyd1.potion.PotionEffects;
+import com.extremelyd1.util.ItemUtil;
 import com.extremelyd1.util.StringUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -59,12 +60,15 @@ public class DeathListener implements Listener {
                 e.setRespawnLocation(playerTeam.getSpawnLocation());
             }
 
-            player.getInventory().addItem(
-                    game.getBingoCardItemFactory().create(game.getBingoCard(), playerTeam)
-            );
-            player.sendMessage(
-                    Game.PREFIX + "You have been given a new bingo card"
-            );
+            // fallen's fork: ensure no duplicated bingo card
+            if (!ItemUtil.hasBingoCard(player)) {
+                player.getInventory().addItem(
+                        game.getBingoCardItemFactory().create(game.getBingoCard(), playerTeam)
+                );
+                player.sendMessage(
+                        Game.PREFIX + "You have been given a new bingo card"
+                );
+            }
         }
     }
 
