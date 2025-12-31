@@ -2,46 +2,37 @@ package com.extremelyd1.gameboard;
 
 import com.extremelyd1.game.Game;
 import com.extremelyd1.game.winCondition.WinConditionChecker;
-import com.extremelyd1.gameboard.boardEntry.BoardEntry;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.scoreboard.DisplaySlot;
-import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.bukkit.scoreboard.*;
 
 /**
- * Represents a scoreboard with GameBoardEntry instances in it
+ * Represents a scoreboard with GameBoardEntry instances in it.
  */
 public class GameBoard {
 
     /**
-     * The last id of a created objective
-     * Makes sure that there are no collisions between objective names
+     * The last id of a created objective.
+     * Makes sure that there are no collisions between objective names.
      */
     protected static int lastObjectiveId = 0;
 
     /**
-     * The game instance
+     * The game instance.
      */
     private final Game game;
 
     /**
-     * The Scoreboard instance of the game board
+     * The Scoreboard instance of the game board.
      */
-    protected Scoreboard scoreboard;
+    protected final Scoreboard scoreboard;
     /**
-     * The Objective instance of this Scoreboard
+     * The Objective instance of this Scoreboard.
      */
-    protected Objective objective;
-
-    /**
-     * The list of entries on this board
-     */
-    protected List<BoardEntry> boardEntries;
+    protected final Objective objective;
 
     public GameBoard(Game game) {
         this.game = game;
@@ -49,42 +40,18 @@ public class GameBoard {
         this.scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
         this.objective = this.scoreboard.registerNewObjective(
                 String.valueOf(lastObjectiveId++),
-                "dummy",
-                "scoreboard"
+                Criteria.DUMMY,
+                Component.text("Minecraft Bingo")
+                        .color(NamedTextColor.YELLOW)
+                        .decorate(TextDecoration.BOLD)
         );
         this.objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-        this.boardEntries = new ArrayList<>();
     }
 
     /**
-     * Updates this board by updating all board entries and resetting the prefixes of players
-     * The following steps are taken to update the board efficiently.
-     * - Remove scores that no longer exist in the board
-     * - Update the board to the most recent scores which will add new values/update existing ones
+     * Updates the players' team colors.
      */
-    public void update() {
-        //Remove entries that no longer exist
-        for (String entry : this.scoreboard.getEntries()) {
-            boolean entryStillExists = false;
-
-            for (BoardEntry newEntry: boardEntries) {
-                if (newEntry.getString().equals(entry)) {
-                    entryStillExists = true;
-                    break;
-                }
-            }
-
-            if (!entryStillExists) {
-                this.scoreboard.resetScores(entry);
-            }
-        }
-
-        // Add the new scores/update existing ones
-        for (int i = 0; i < boardEntries.size(); i++) {
-            this.objective.getScore(boardEntries.get(i).getString()).setScore(boardEntries.size() - i);
-        }
-
-        // Update team colors
+    public void updateTeamColors() {
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
             com.extremelyd1.game.team.Team gameTeam = game.getTeamManager().getTeamByPlayer(onlinePlayer);
             if (gameTeam == null) {
@@ -99,14 +66,14 @@ public class GameBoard {
             }
 
             // Get scoreboard team with color enum name
-            Team scoreboardTeam = scoreboard.getTeam(gameTeam.getColor().name());
+            Team scoreboardTeam = scoreboard.getTeam(gameTeam.getName());
 
             if (scoreboardTeam == null) {
                 // Create new scoreboard team with color enum name
-                scoreboardTeam = scoreboard.registerNewTeam(gameTeam.getColor().name());
+                scoreboardTeam = scoreboard.registerNewTeam(gameTeam.getName());
 
                 // Set prefix to color code
-                scoreboardTeam.setColor(gameTeam.getColor());
+                scoreboardTeam.color(gameTeam.getColor());
             }
 
             // Add player name to this scoreboard team
@@ -116,7 +83,7 @@ public class GameBoard {
     }
 
     /**
-     * Broadcasts this board to all online players
+     * Broadcasts this board to all online players.
      */
     public void broadcast() {
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -125,9 +92,9 @@ public class GameBoard {
     }
 
     /**
-     * Format the win condition of the given WinConditionChecker to a human readable form
-     * @param winConditionChecker The class containing the win condition
-     * @return A human readable string representing the win condition
+     * Format the win condition of the given WinConditionChecker to a human-readable form.
+     * @param winConditionChecker The class containing the win condition.
+     * @return A human-readable string representing the win condition.
      */
     protected String formatWinCondition(WinConditionChecker winConditionChecker) {
         int completionsToLock = winConditionChecker.getCompletionsToLock();
@@ -154,5 +121,4 @@ public class GameBoard {
         }
         return numLines + " " + type;
     }
-
 }

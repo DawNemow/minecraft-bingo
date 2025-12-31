@@ -8,52 +8,56 @@ import com.extremelyd1.gameboard.boardEntry.BlankBoardEntry;
 import com.extremelyd1.gameboard.boardEntry.BoardEntry;
 import com.extremelyd1.gameboard.boardEntry.DynamicBoardEntry;
 import com.extremelyd1.util.TimeUtil;
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 
 /**
- * Represents the in game scoreboard
+ * Represents the in game scoreboard.
  */
 public class IngameBoard extends GameBoard {
 
     /**
-     * The team this scoreboard belongs to
+     * The team this scoreboard belongs to.
      */
     private final Team team;
 
     /**
-     * The entry representing the number of items collected
+     * The entry representing the number of items collected.
      */
     private final DynamicBoardEntry<Integer> numItemsEntry;
     /**
-     * The entry representing the timer
+     * The entry representing the timer.
      */
     private final DynamicBoardEntry<String> timeLeftEntry;
     /**
-     * The entry representing the currently winning team
+     * The entry representing the currently winning team.
      */
-    private final DynamicBoardEntry<String> winningTeamEntry;
+    private final DynamicBoardEntry<Component> winningTeamEntry;
 
     public IngameBoard(Game game, Team team) {
         super(game);
 
         this.team = team;
 
-        this.objective.setDisplayName(
-                ChatColor.BOLD.toString()
-                        + ChatColor.YELLOW.toString()
-                        + "Minecraft Bingo"
+        BoardEntry.reset(objective);
+
+        new BlankBoardEntry();
+        new BoardEntry(Component
+                .text("Status: ")
+                .append(Component
+                        .text("In-Game")
+                        .color(NamedTextColor.YELLOW)
+                )
         );
 
-        int numberOfSpaces = 1;
-        this.boardEntries.add(new BlankBoardEntry(numberOfSpaces++));
-        this.boardEntries.add(new BoardEntry(
-                "Status: " + ChatColor.YELLOW + "In-Game"
-        ));
-
-        this.boardEntries.add(new BoardEntry(
-                "Game type: " + ChatColor.YELLOW + formatWinCondition(game.getWinConditionChecker())
-        ));
+        new BoardEntry(Component
+                .text("Game type: ")
+                .append(Component
+                        .text(formatWinCondition(game.getWinConditionChecker()))
+                        .color(NamedTextColor.YELLOW)
+                )
+        );
 
         // fallen's fork: add "hold" mode
         if (game.getWinConditionChecker().isHoldMode()) {
@@ -65,63 +69,78 @@ public class IngameBoard extends GameBoard {
         }
 
         if (game.getConfig().isTimerEnabled()) {
-            timeLeftEntry = new DynamicBoardEntry<>(
-                    "Time left: " + ChatColor.YELLOW + "%s",
+            timeLeftEntry = new DynamicBoardEntry<>(Component
+                    .text("Time left: ")
+                    .append(Component
+                            .text(DynamicBoardEntry.replacePlaceholder)
+                            .color(NamedTextColor.YELLOW)
+                    ),
                     "0:00"
             );
-            this.boardEntries.add(timeLeftEntry);
         } else {
             timeLeftEntry = null;
         }
 
-        this.boardEntries.add(new BlankBoardEntry(numberOfSpaces++));
-        this.boardEntries.add(new BoardEntry(
-                "Team: " + team.getColor() + team.getName()
-        ));
-        this.boardEntries.add(new BlankBoardEntry(numberOfSpaces++));
+        new BlankBoardEntry();
+
+        new BoardEntry(Component
+                .text("Team: ")
+                .append(Component
+                        .text(team.getName())
+                        .color(team.getColor())
+                )
+        );
+        new BlankBoardEntry();
 
         if (!team.isSpectatorTeam()) {
-            this.boardEntries.add(new BoardEntry("Number of items collected:"));
-            numItemsEntry = new DynamicBoardEntry<>(ChatColor.AQUA + "  %d", 0);
-            this.boardEntries.add(numItemsEntry);
-            this.boardEntries.add(new BlankBoardEntry(numberOfSpaces++));
+            new BoardEntry(Component
+                    .text("Number of items collected:")
+            );
+            numItemsEntry = new DynamicBoardEntry<>(Component
+                    .text("  " + DynamicBoardEntry.replacePlaceholder)
+                    .color(NamedTextColor.AQUA),
+                    0
+            );
+            new BlankBoardEntry();
         } else {
             numItemsEntry = null;
         }
 
         if (game.getConfig().showCurrentlyWinningTeam()) {
-            this.boardEntries.add(new BoardEntry("Leading team:"));
-            winningTeamEntry = new DynamicBoardEntry<>("  %s", ChatColor.GRAY + "Tie");
-            this.boardEntries.add(winningTeamEntry);
-            this.boardEntries.add(new BlankBoardEntry(numberOfSpaces++));
+            new BoardEntry(Component
+                    .text("Leading team:")
+            );
+            winningTeamEntry = new DynamicBoardEntry<>(Component
+                    .text("  "),
+                    Component
+                            .text("Tie")
+                            .color(NamedTextColor.GRAY)
+            );
+            new BlankBoardEntry();
         } else {
             winningTeamEntry = null;
         }
     }
 
     /**
-     * Updates this board with a new number of items
-     * @param numItems The new number of items
+     * Updates this board with a new number of items.
+     * @param numItems The new number of items.
      */
     public void updateNumItems(int numItems) {
         numItemsEntry.setValue(numItems);
-
-        super.update();
     }
 
     /**
-     * Updates this board with the new time left
-     * @param timeLeft The new time left
+     * Updates this board with the new time left.
+     * @param timeLeft The new time left.
      */
     public void updateTime(long timeLeft) {
         timeLeftEntry.setValue(TimeUtil.formatTimeLeft(timeLeft));
-
-        super.update();
     }
 
     /**
-     * Updates this board with the currently winning team
-     * @param team The currently winning team
+     * Updates this board with the currently winning team.
+     * @param team The currently winning team.
      */
     public void updateWinningTeam(PlayerTeam team) {
         if (winningTeamEntry == null) {
@@ -129,16 +148,20 @@ public class IngameBoard extends GameBoard {
         }
 
         if (team == null) {
-            winningTeamEntry.setValue(ChatColor.GRAY + "Tie");
+            winningTeamEntry.setValue(Component
+                    .text("Tie")
+                    .color(NamedTextColor.GRAY)
+            );
         } else {
-            winningTeamEntry.setValue(team.getColor() + team.getName());
+            winningTeamEntry.setValue(Component
+                    .text(team.getName())
+                    .color(team.getColor())
+            );
         }
-
-        super.update();
     }
 
     /**
-     * Broadcasts this board to all the team's members
+     * Broadcasts this board to all the team's members.
      */
     public void broadcast() {
         for (Player player : team.getPlayers()) {

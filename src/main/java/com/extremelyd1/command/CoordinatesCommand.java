@@ -2,24 +2,22 @@ package com.extremelyd1.command;
 
 import com.extremelyd1.game.Game;
 import com.extremelyd1.game.team.Team;
+import com.extremelyd1.util.ChatUtil;
 import com.extremelyd1.util.CommandUtil;
-import org.bukkit.ChatColor;
+import io.papermc.paper.command.brigadier.BasicCommand;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
-import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.List;
-
-
-public class CoordinatesCommand implements TabExecutor {
+@SuppressWarnings("UnstableApiUsage")
+public class CoordinatesCommand implements BasicCommand {
 
     /**
-     * The game instance
+     * The game instance.
      */
     private final Game game;
 
@@ -28,29 +26,31 @@ public class CoordinatesCommand implements TabExecutor {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String s, String[] args) {
-        if (!CommandUtil.checkCommandSender(sender, false, false)) {
-            return true;
+    public void execute(@NotNull CommandSourceStack commandSourceStack, String @NotNull [] args) {
+        if (!CommandUtil.checkCommandSender(commandSourceStack, false, false)) {
+            return;
         }
 
+        CommandSender sender = commandSourceStack.getSender();
         if (game.getState().equals(Game.State.PRE_GAME)) {
-            sender.sendMessage(
-                    ChatColor.DARK_RED + "Error: "
-                            + ChatColor.WHITE + "Cannot execute this command in pregame"
-            );
-            return true;
+            sender.sendMessage(ChatUtil.errorPrefix().append(Component
+                    .text("Cannot execute this command in pre-game")
+                    .color(NamedTextColor.WHITE)
+            ));
+
+            return;
         }
 
         Player player = (Player) sender;
 
         Team team = game.getTeamManager().getTeamByPlayer(player);
         if (team == null || team.isSpectatorTeam()) {
-            player.sendMessage(
-                    ChatColor.DARK_RED + "Error: "
-                            + ChatColor.WHITE + "Cannot execute this command as spectator"
-            );
+            player.sendMessage(ChatUtil.errorPrefix().append(Component
+                    .text("Cannot execute this command as spectator")
+                    .color(NamedTextColor.WHITE)
+            ));
 
-            return true;
+            return;
         }
 
         Location location = player.getLocation();
@@ -67,23 +67,24 @@ public class CoordinatesCommand implements TabExecutor {
         }
 
         for (Player teamPlayer : team.getPlayers()) {
-            teamPlayer.sendMessage(
-                    team.getColor() + "TEAM "
-                            + player.getName()
-                            + ChatColor.WHITE + ": "
-                            + ChatColor.AQUA + "["
-                            + Math.round(location.getX()) + ", "
-                            + Math.round(location.getY()) + ", "
-                            + Math.round(location.getZ()) + "]"
-                            + ChatColor.WHITE + description
+            String x = String.valueOf(Math.round(location.getX()));
+            String y = String.valueOf(Math.round(location.getY()));
+            String z = String.valueOf(Math.round(location.getZ()));
+
+            teamPlayer.sendMessage(Component
+                    .text("TEAM " + player.getName())
+                    .color(team.getColor())
+                    .append(Component
+                            .text(": ")
+                            .color(NamedTextColor.WHITE)
+                    ).append(Component
+                            .text("[" + x + ", " + y + ", " + z + "]")
+                            .color(NamedTextColor.AQUA)
+                    ).append(Component
+                            .text(description)
+                            .color(NamedTextColor.WHITE)
+                    )
             );
         }
-
-        return true;
-    }
-
-    @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        return Collections.emptyList();
     }
 }

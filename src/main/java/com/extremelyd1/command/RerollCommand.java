@@ -1,18 +1,17 @@
 package com.extremelyd1.command;
 
 import com.extremelyd1.game.Game;
+import com.extremelyd1.util.ChatUtil;
 import com.extremelyd1.util.CommandUtil;
-import org.bukkit.ChatColor;
-import org.bukkit.command.Command;
+import io.papermc.paper.command.brigadier.BasicCommand;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabExecutor;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.List;
-
-public class RerollCommand implements TabExecutor {
+@SuppressWarnings("UnstableApiUsage")
+public class RerollCommand implements BasicCommand {
 
     /**
      * The game instance
@@ -24,31 +23,27 @@ public class RerollCommand implements TabExecutor {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String s, String[] strings) {
-        if (!CommandUtil.checkCommandSender(sender, true, true)) {
-            return true;
+    public void execute(@NotNull CommandSourceStack commandSourceStack, String @NotNull [] args) {
+        if (!CommandUtil.checkCommandSender(commandSourceStack, true, true)) {
+            return;
         }
 
-        if (!game.getState().equals(Game.State.IN_GAME)) {
-            sender.sendMessage(
-                    ChatColor.DARK_RED + "Error: "
-                            + ChatColor.WHITE + "Can only use this command in game"
-            );
+        CommandSender sender = commandSourceStack.getSender();
 
-            return true;
+        if (!game.getState().equals(Game.State.IN_GAME)) {
+            sender.sendMessage(ChatUtil.errorPrefix().append(Component
+                    .text("Can only use this command in-game")
+                    .color(NamedTextColor.WHITE)
+            ));
+
+            return;
         }
 
         game.rerollCard();
 
-        sender.sendMessage(
-                Game.PREFIX + "Rerolled bingo card"
-        );
-
-        return true;
-    }
-
-    @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        return Collections.emptyList();
+        sender.sendMessage(ChatUtil.successPrefix().append(Component
+                .text("Rerolled bingo card")
+                .color(NamedTextColor.WHITE)
+        ));
     }
 }

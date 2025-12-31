@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Random;
 
 public class WorldManager implements Listener {
+    private static final int StructureSearchRadius = 3000;
 
     /**
      * The game instance.
@@ -51,7 +52,7 @@ public class WorldManager implements Listener {
     public WorldManager(Game game) throws IllegalArgumentException {
         this.game = game;
 
-        if (game.getConfig().isBorderEnabled() && game.getConfig().isOverrideWorldGeneration()) {
+        if (game.getConfig().isBorderEnabled() && game.getConfig().shouldGenerateEmptyChunks()) {
             Server server = Bukkit.getServer();
             CraftServer craftServer = (CraftServer) server;
 
@@ -63,8 +64,9 @@ public class WorldManager implements Listener {
                 configuration.set("worlds.world.generator", game.getPlugin().getName());
                 configuration.set("worlds.world_nether.generator", game.getPlugin().getName());
             } catch (NoSuchFieldException | IllegalAccessException e) {
-                Game.getLogger().severe("Could not set generator in Bukkit configuration");
-                e.printStackTrace();
+                Game.getLogger().severe(
+                        "Could not set generator in Bukkit configuration, exception:\n%s".formatted(e)
+                );
             }
         }
     }
@@ -140,7 +142,6 @@ public class WorldManager implements Listener {
                     world,
                     StructureType.STRONGHOLD,
                     net.minecraft.world.level.levelgen.structure.StructureType.STRONGHOLD,
-                    3000,
                     this.game.getConfig().getOverworldBorderSize()
             );
         } else if (world.getEnvironment().equals(World.Environment.NETHER)) {
@@ -148,7 +149,6 @@ public class WorldManager implements Listener {
                     world,
                     StructureType.FORTRESS,
                     net.minecraft.world.level.levelgen.structure.StructureType.FORTRESS,
-                    3000,
                     this.game.getConfig().getNetherBorderSize()
             );
         }
@@ -157,17 +157,16 @@ public class WorldManager implements Listener {
     /**
      * Sets the world border with given size in the given world ensuring that the closest structure given by
      * structureType and structureName are within this border
-     * @param world The world in which to set the border
+     *
+     * @param world               The world in which to set the border
      * @param bukkitStructureType The bukkit type of structure that needs to be encompassed in this border
-     * @param nmsStructureType The internal NMS type of the structure
-     * @param searchRadius The radius for which to search for the structure
-     * @param size The size of the border
+     * @param nmsStructureType    The internal NMS type of the structure
+     * @param size                The size of the border
      */
     private <S extends Structure> void setWorldBorder(
             World world,
             StructureType bukkitStructureType,
             net.minecraft.world.level.levelgen.structure.StructureType<S> nmsStructureType,
-            int searchRadius,
             int size
     ) {
         Game.getLogger().info("Locating structure " + bukkitStructureType.getKey() + " to determine border center");
@@ -175,13 +174,13 @@ public class WorldManager implements Listener {
         StructureSearchResult structureSearchResult = world.locateNearestStructure(
                 new Location(world, 0, 0, 0),
                 bukkitStructureType,
-                searchRadius,
+                StructureSearchRadius,
                 false
         );
 
         if (structureSearchResult == null) {
-            Game.getLogger().warning("Could not find structure " + bukkitStructureType
-                    + " within " + searchRadius
+            Game.getLogger().warning("Could not find structure " + bukkitStructureType.getKey()
+                    + " within " + StructureSearchRadius
                     + " blocks in world type " + world.getEnvironment()
             );
             return;
@@ -249,6 +248,12 @@ public class WorldManager implements Listener {
         Random random = new Random(world.getSeed());
         int centerX = random.nextInt(centerMaxX - centerMinX + 1) + centerMinX;
         int centerZ = random.nextInt(centerMaxZ - centerMinZ + 1) + centerMinZ;
+
+        Game.getLogger().info("Setting world border at x: %s, z: %s, with size: %s".formatted(
+                centerX,
+                centerZ,
+                size
+        ));
 
         WorldBorder border = world.getWorldBorder();
         border.setCenter(centerX, centerZ);

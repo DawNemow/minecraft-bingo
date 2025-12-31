@@ -2,18 +2,15 @@ package com.extremelyd1.command;
 
 import com.extremelyd1.game.Game;
 import com.extremelyd1.util.CommandUtil;
+import io.papermc.paper.command.brigadier.BasicCommand;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabExecutor;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.List;
-
-public class MaintenanceCommand implements TabExecutor {
+@SuppressWarnings("UnstableApiUsage")
+public class MaintenanceCommand implements BasicCommand {
 
     /**
      * The game instance
@@ -25,28 +22,26 @@ public class MaintenanceCommand implements TabExecutor {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String s, String[] strings) {
-        if (!CommandUtil.checkCommandSender(sender, true, true)) {
-            return true;
+    public void execute(@NotNull CommandSourceStack commandSourceStack, String @NotNull [] args) {
+        if (!CommandUtil.checkCommandSender(commandSourceStack, true, true)) {
+            return;
         }
 
         game.toggleMaintenance();
 
+        Component message = Component.text("Maintenance is now ");
         if (!game.isMaintenance()) {
-            Bukkit.broadcastMessage(
-                    Game.PREFIX + "Maintenance is now " + ChatColor.DARK_RED + "disabled"
+            message = message.append(Component
+                    .text("disabled")
+                    .color(NamedTextColor.DARK_RED)
             );
         } else {
-            Bukkit.broadcastMessage(
-                    Game.PREFIX + "Maintenance is now " + ChatColor.GREEN + "enabled"
+            message = message.append(Component
+                    .text("enabled")
+                    .color(NamedTextColor.GREEN)
             );
         }
 
-        return true;
-    }
-
-    @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        return Collections.emptyList();
+        Bukkit.broadcast(message);
     }
 }
