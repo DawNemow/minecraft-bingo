@@ -1,29 +1,20 @@
 package com.extremelyd1.command;
 
-import org.bukkit.ChatColor;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabExecutor;
+import com.extremelyd1.util.ChatUtil;
+import io.papermc.paper.command.brigadier.BasicCommand;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.List;
-
-public class DisabledCommand implements TabExecutor {
+@SuppressWarnings("UnstableApiUsage")
+public class DisabledCommand implements BasicCommand {
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        sender.sendMessage(
-                ChatColor.DARK_RED + "Error: "
-                        + ChatColor.WHITE + "this command is currently disabled"
-        );
-
-        return true;
-    }
-
-    @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        return Collections.emptyList();
+    public void execute(@NotNull CommandSourceStack commandSourceStack, String @NotNull [] args) {
+        commandSourceStack.getSender().sendMessage(ChatUtil.errorPrefix().append(Component
+                .text("This command is currently disabled")
+                .color(NamedTextColor.WHITE)
+        ));
     }
 }

@@ -4,15 +4,14 @@ import com.extremelyd1.bingo.BingoCard;
 import com.extremelyd1.bingo.item.BingoItem;
 import com.extremelyd1.config.Config;
 import com.extremelyd1.game.team.PlayerTeam;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
-import static com.extremelyd1.game.Game.PREFIX;
 
 /**
  * A class that stores and handles/checks win conditions. Such as needing a full card to win the game or completing
@@ -47,12 +46,18 @@ public class WinConditionChecker {
      */
     private final int quidditchGoldenSnitchBonus;
 
+    /**
+     * If enabled, items which are not in the team players' inventories will be removed from the collected items
+     */
+    private final boolean holdMode;
+
     public WinConditionChecker(Config config) {
         this.numLinesToComplete = config.getDefaultNumLinesComplete();
         this.fullCard = false;
         this.completionsToLock = 0;
         this.quidditchMode = config.isDefaultWinConditionIsQuidditch();
         this.quidditchGoldenSnitchBonus = config.getQuidditchGoldenSnitchBonus();
+        this.holdMode = config.isHoldMode();
     }
 
     /**
@@ -95,11 +100,29 @@ public class WinConditionChecker {
             }
             if (flag) {
                 collectorTeam.setGotGoldenSnitch(true);
-                Bukkit.broadcastMessage(
-                        PREFIX +
-                                collectorTeam.getColor() + collectorTeam.getName()
-                                + ChatColor.WHITE + " team gets the " + ChatColor.GOLD + "Golden Snitch" + ChatColor.WHITE + " and receives "
-                                + ChatColor.AQUA + quidditchGoldenSnitchBonus + ChatColor.WHITE + " extra scores"
+                Bukkit.broadcast(Component
+                        .text(collectorTeam.getName())
+                        .color(collectorTeam.getColor())
+                        .append(Component
+                                .text(" team gets the ")
+                                .color(NamedTextColor.WHITE)
+                        )
+                        .append(Component
+                                .text("Golden Snitch")
+                                .color(NamedTextColor.GOLD)
+                        )
+                        .append(Component
+                                .text(" and receives ")
+                                .color(NamedTextColor.WHITE)
+                        )
+                        .append(Component
+                                .text(quidditchGoldenSnitchBonus)
+                                .color(NamedTextColor.AQUA)
+                        )
+                        .append(Component
+                                .text(" extra scores")
+                                .color(NamedTextColor.WHITE)
+                        )
                 );
             }
         }
@@ -227,7 +250,7 @@ public class WinConditionChecker {
             );
         } else {
             winReason = new WinReason(
-                    potentialWinners.get(0),
+                    potentialWinners.getFirst(),
                     WinReason.Reason.COMPLETE
             );
         }
@@ -287,8 +310,14 @@ public class WinConditionChecker {
         return numLinesToComplete;
     }
 
+    // fallen's fork: add "quidditch" mode
     public boolean isQuidditchMode() {
         return quidditchMode;
+    }
+
+    // fallen's fork: add "hold" mode
+    public boolean isHoldMode() {
+        return holdMode;
     }
 
     public void setFullCard() {

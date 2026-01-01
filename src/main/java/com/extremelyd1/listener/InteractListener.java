@@ -1,5 +1,6 @@
 package com.extremelyd1.listener;
 
+import com.extremelyd1.bingo.map.BingoCardItemFactory;
 import com.extremelyd1.game.Game;
 import com.extremelyd1.game.team.PlayerTeam;
 import com.extremelyd1.game.team.Team;
@@ -16,8 +17,8 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Container;
 import org.bukkit.ChatColor;
-import org.bukkit.craftbukkit.v1_20_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_20_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -33,20 +34,22 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.*;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.Location;
-
-import javax.swing.text.JTextComponent;
 
 public class InteractListener implements Listener {
 
     /**
-     * The game instance
+     * The game instance.
      */
     private final Game game;
 
-    public InteractListener(Game game) {
+    /**
+     * The bingo card item factory instance to check whether an item is a bingo card.
+     */
+    private final BingoCardItemFactory bingoCardItemFactory;
+
+    public InteractListener(Game game, BingoCardItemFactory bingoCardItemFactory) {
         this.game = game;
+        this.bingoCardItemFactory = bingoCardItemFactory;
     }
 
     @EventHandler
@@ -137,12 +140,7 @@ public class InteractListener implements Listener {
         }
 
         ItemStack itemStack = e.getItem();
-        if (!itemStack.hasItemMeta()) {
-            return;
-        }
-
-        ItemMeta meta = itemStack.getItemMeta();
-        if (!meta.getDisplayName().contains("Bingo Card")) {
+        if (!bingoCardItemFactory.isBingoCard(itemStack)) {
             return;
         }
 
@@ -174,9 +172,9 @@ public class InteractListener implements Listener {
             }
 
             // Only allow the following inventory holding entities as interaction targets
-            if (entity.getType().equals(EntityType.MINECART_CHEST)
-                    || entity.getType().equals(EntityType.MINECART_FURNACE)
-                    || entity.getType().equals(EntityType.MINECART_HOPPER)) {
+            if (entity.getType().equals(EntityType.CHEST_MINECART)
+                    || entity.getType().equals(EntityType.FURNACE_MINECART)
+                    || entity.getType().equals(EntityType.HOPPER_MINECART)) {
                 InventoryHolder inventoryHolder = (InventoryHolder) entity;
 
                 e.getPlayer().openInventory(inventoryHolder.getInventory());
@@ -188,11 +186,9 @@ public class InteractListener implements Listener {
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent e) {
-        if (!(e.getWhoClicked() instanceof Player)) {
+        if (!(e.getWhoClicked() instanceof Player player)) {
             return;
         }
-
-        Player player = (Player) e.getWhoClicked();
 
         if (!game.getState().equals(Game.State.IN_GAME)) {
             e.setCancelled(true);
@@ -201,9 +197,7 @@ public class InteractListener implements Listener {
 
         if (e.getClick().equals(ClickType.MIDDLE)) {
             ItemStack itemStack = e.getCurrentItem();
-            if (itemStack != null
-                    && itemStack.hasItemMeta()
-                    && itemStack.getItemMeta().getDisplayName().contains("Bingo Card")) {
+            if (bingoCardItemFactory.isBingoCard(itemStack)) {
                 Team team = game.getTeamManager().getTeamByPlayer(player);
                 if (team == null || team.isSpectatorTeam()) {
                     return;
@@ -213,40 +207,35 @@ public class InteractListener implements Listener {
             }
         }
 
-        if (e.getView().getTitle().contains("Bingo Card")) {
-            //add note
+        if (game.getBingoCard().getBingoCardInventory().isBingoCard(e.getView().getTopInventory())) {
+
+            // fallen's fork: in-game notification by clicking items in the bingo card, starts
             Team team = game.getTeamManager().getTeamByPlayer(player);
-            Material material = e.getCurrentItem().getType();
-            PlayerTeam playerteam = (PlayerTeam) team;
-            if (e.getClick().equals(ClickType.LEFT)) {
-                for (Player teamPlayer : team.getPlayers()) {
-                    teamPlayer.sendMessage(Component.text(
-                            playerteam.getColor() + player.getName()
-                                    + ChatColor.WHITE + " 认为需要有人来制作 ").append(Component.translatable(material.translationKey()).
-                            color(NamedTextColor.AQUA)));
-                    game.meow(teamPlayer);
+            if (team instanceof PlayerTeam playerteam && e.getCurrentItem() != null) {
+                Material material = e.getCurrentItem().getType();
+                if (e.getClick().equals(ClickType.LEFT)) {
+                    for (Player teamPlayer : team.getPlayers()) {
+                        teamPlayer.sendMessage(Component
+                                .text( "TEAM " + player.getName()).color(playerteam.getColor())
+                                .append(Component.text(" thinks someone should work on ").color(NamedTextColor.WHITE))
+                                .append(Component.translatable(material.translationKey()).color(NamedTextColor.AQUA))
+                        );
+                        game.meow(teamPlayer);
+                    }
+                }
+                if (e.getClick().equals(ClickType.RIGHT)) {
+                    for (Player teamPlayer : team.getPlayers()) {
+                        teamPlayer.sendMessage(Component
+                                .text( "TEAM " + player.getName()).color(playerteam.getColor())
+                                .append(Component.text(" is working on ").color(NamedTextColor.WHITE))
+                                .append(Component.translatable(material.translationKey()).color(NamedTextColor.AQUA))
+                        );
+                        game.meow(teamPlayer);
+                    }
                 }
             }
-            if (e.getClick().equals(ClickType.RIGHT)) {
-                Location location = player.getLocation();
-                for (Player teamPlayer : team.getPlayers()) {
-                    teamPlayer.sendMessage(Component.text(
-                            playerteam.getColor() + player.getName()
-                                    + ":"+ ChatColor.AQUA + "["
-                                    + Math.round(location.getX()) + ", "
-                                    + Math.round(location.getY()) + ", "
-                                    + Math.round(location.getZ()) + "]"
-                                    + ChatColor.WHITE +" 正在制作 ").append(Component.translatable(material.translationKey()).
-                            color(NamedTextColor.AQUA)));
-                    game.meow(teamPlayer);
-                }
+            // fallen's fork: in-game notification by clicking items in the bingo card, ends
 
-            }
-
-
-
-
-            //note end
             e.setCancelled(true);
             return;
         }
@@ -263,28 +252,29 @@ public class InteractListener implements Listener {
 
         InventoryType invType = e.getClickedInventory().getType();
 
+        PlayerInventory playerInventory = e.getWhoClicked().getInventory();
+
         // In certain inventory types and while performing certain inventory actions,
         // we need to check whether we can actually perform the action.
         // Because if this can't be done, it will not consume the ingredients in the recipe.
+        if (e.getAction().equals(InventoryAction.MOVE_TO_OTHER_INVENTORY)) {
+            // We are dealing with shift-click, now we need to check whether
+            // there is space in the player inventory to insert this item
+            if (!InventoryUtil.canShiftClickItem(
+                    playerInventory.getStorageContents(),
+                    currentItem
+            )) {
+                return;
+            }
+        }
+
         if (invType.equals(InventoryType.WORKBENCH)
                 || invType.equals(InventoryType.CRAFTING)
                 || invType.equals(InventoryType.SMITHING)
                 || invType.equals(InventoryType.STONECUTTER)
-                || invType.equals(InventoryType.MERCHANT)) {
-            PlayerInventory playerInventory = e.getWhoClicked().getInventory();
-
-            if (e.getAction().equals(InventoryAction.MOVE_TO_OTHER_INVENTORY)) {
-                // We are dealing with shift-click, now we need to check whether
-                // there is space in the player inventory to insert this item
-                if (!InventoryUtil.canShiftClickItem(
-                        playerInventory.getStorageContents(),
-                        currentItem
-                )) {
-                    return;
-                }
-            }
-
-            if (e.getAction().equals(InventoryAction.HOTBAR_MOVE_AND_READD)) {
+                || invType.equals(InventoryType.MERCHANT)
+        ) {
+            if (e.getClick().equals(ClickType.NUMBER_KEY)) {
                 // We are dealing with a move to specific hotbar position
                 if (playerInventory.getStorageContents()[e.getHotbarButton()] != null) {
                     // The slot we are trying to move the result to is non-empty, so minecraft will not move the item
@@ -297,6 +287,6 @@ public class InteractListener implements Listener {
             }
         }
 
-        game.onMaterialCollected(player, currentItem.getType());
+        game.onItemCollected(player, currentItem);
     }
 }

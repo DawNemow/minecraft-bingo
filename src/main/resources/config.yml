@@ -21,7 +21,9 @@ border:
   enable: True
   overworld-size: 3000
   nether-size: 1000
-  override-world-generation: False
+  generation:
+    empty-chunks-outside-border: True
+    biome-size: normal
 timer:
   enable: True
   length: 1800
@@ -37,3 +39,4 @@ default-win-condition-is-quidditch: False
 quidditch-golden-snitch-bonus: 1
 allow-mid-game-join: False
 allow-spawn-biome-without-tree: True
+hold-mode: False

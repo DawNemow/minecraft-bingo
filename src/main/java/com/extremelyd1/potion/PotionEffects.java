@@ -9,7 +9,7 @@ public class PotionEffects {
      * The resistance 5 potion effect lasting 150 ticks = 7.5 seconds.
      */
     public static final PotionEffect RESISTANCE = new PotionEffect(
-            PotionEffectType.DAMAGE_RESISTANCE,
+            PotionEffectType.RESISTANCE,
             150,
             4,
             false,
@@ -34,28 +34,6 @@ public class PotionEffects {
             PotionEffectType.DARKNESS,
             100,
             0,
-            false,
-            false
-    );
-
-    /**
-     * Slowness potion effect applied on game start lasting 100 ticks = 5 seconds.
-     */
-    public static final PotionEffect SLOWNESS = new PotionEffect(
-            PotionEffectType.SLOW,
-            100,
-            10,
-            false,
-            false
-    );
-
-    /**
-     * Jump-boost potion effect applied on game start lasting 100 ticks = 5 seconds.
-     */
-    public static final PotionEffect JUMP = new PotionEffect(
-            PotionEffectType.JUMP,
-            100,
-            128,
             false,
             false
     );

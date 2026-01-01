@@ -93,6 +93,16 @@ public class BingoCard {
         return true;
     }
 
+    // fallen's fork: add "hold" mode
+    public boolean checkMaterialDrop(Material material, PlayerTeam team) {
+        BingoItem bingoItem = getItemByMaterial(material);
+        if (bingoItem == null) {
+            return false;
+        }
+
+        return removeItemCollected(material, team);
+    }
+
     /**
      * Checks whether the given bingo item is locked due to its number of completions
      * @param bingoItem The BingoItem to check for
@@ -156,6 +166,24 @@ public class BingoCard {
                 }
             }
         }
+    }
+
+    // fallen's fork: add "hold" mode
+    private boolean removeItemCollected(Material material, PlayerTeam team) {
+        int cnt = 0;
+        for (int y = 0; y < BOARD_SIZE; y++) {
+            for (int x = 0; x < BOARD_SIZE; x++) {
+                BingoItem bingoItem = bingoItems[y][x];
+                if (bingoItem.getMaterial().equals(material)
+                        && bingoItem.hasCollected(team)) {
+                    bingoItem.removeCollector(team);
+
+                    team.decrementCollected();
+                    cnt++;
+                }
+            }
+        }
+        return cnt > 0;
     }
 
     /**

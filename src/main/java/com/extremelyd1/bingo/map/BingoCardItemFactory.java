@@ -6,8 +6,9 @@ import com.extremelyd1.game.Game;
 import com.extremelyd1.game.team.PlayerTeam;
 import com.extremelyd1.util.ColorUtil;
 import com.extremelyd1.util.FileUtil;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
@@ -16,7 +17,9 @@ import org.bukkit.map.MapView;
 
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class BingoCardItemFactory {
 
@@ -89,17 +92,23 @@ public class BingoCardItemFactory {
      */
     private final Map<ItemStack, ImageRenderer> renderers;
 
+    /**
+     * A set containing item stacks that are created by this factory.
+     */
+    private final Set<ItemStack> createdBingoCards;
+
     public BingoCardItemFactory(Game game) {
         this.game = game;
 
         this.cachedImages = new HashMap<>();
         this.renderers = new HashMap<>();
+        this.createdBingoCards = new HashSet<>();
     }
 
     /**
      * Create an ItemStack from the given bingo card
      *
-     * @param bingoCard      The BingoCard to make the itemstack from
+     * @param bingoCard      The BingoCard to make the item stack from
      * @param team           The team that this card should be created for
      * @return The created ItemStack
      */
@@ -110,7 +119,7 @@ public class BingoCardItemFactory {
     /**
      * Create an ItemStack from the given bingo card
      *
-     * @param bingoCard      The BingoCard to make the itemstack from
+     * @param bingoCard      The BingoCard to make the item stack from
      * @param team           The team that this card should be created for
      * @param borderColor    The color of the border of the bingo card
      * @return The created ItemStack
@@ -120,7 +129,7 @@ public class BingoCardItemFactory {
 
         ItemStack itemStack = new ItemStack(Material.FILLED_MAP, 1);
 
-        MapView mapView = Bukkit.createMap(Bukkit.getWorlds().get(0));
+        MapView mapView = Bukkit.createMap(Bukkit.getWorlds().getFirst());
 
         // We get a copy of the list from mapView.getRenderers()
         // So loop over it and individually delete all renderers
@@ -134,13 +143,14 @@ public class BingoCardItemFactory {
 
         MapMeta meta = (MapMeta) itemStack.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName(ChatColor.AQUA + "Bingo Card");
+            meta.customName(Component.text("Bingo Card").color(NamedTextColor.AQUA));
             meta.setMapView(mapView);
 
             itemStack.setItemMeta(meta);
         }
 
         renderers.put(itemStack, imageRenderer);
+        createdBingoCards.add(itemStack);
 
         return itemStack;
     }
@@ -176,6 +186,7 @@ public class BingoCardItemFactory {
      * @return A BufferedImage that represents the current state of the bingo card for the given team
      * with the given border color
      */
+    @SuppressWarnings("PointlessBitwiseExpression")
     private BufferedImage drawBingoCardImage(BingoCard bingoCard, PlayerTeam team, int borderColor) {
         BufferedImage image = new BufferedImage(CANVAS_SIZE, CANVAS_SIZE, BufferedImage.TYPE_INT_RGB);
         // Base layer of map color
@@ -249,19 +260,31 @@ public class BingoCardItemFactory {
 
                 if (itemImage == null) {
                     Game.getLogger().warning(
-                            "Could not find image file for material: " + bingoItem.getMaterial()
+                            "Could not find image file for material: %s".formatted(bingoItem.getMaterial())
                     );
                     continue;
                 }
 
+                float baseR = ((baseColor >> 0x10) & 0xff) / 255f;
+                float baseG = ((baseColor >> 0x08) & 0xff) / 255f;
+                float baseB = ((baseColor >> 0x00) & 0xff) / 255f;
+
                 for (int imageX = 0; imageX < IMAGE_SIZE; imageX++) {
                     for (int imageY = 0; imageY < IMAGE_SIZE; imageY++) {
-                        int colorToSet = itemImage.getRGB(imageX, imageY);
-                        int alpha = (colorToSet >>> 24);
+                        int itemColor = itemImage.getRGB(imageX, imageY);
 
-                        if (alpha == 0) {
-                            colorToSet = baseColor;
-                        }
+                        float itemA = ((itemColor >> 0x18) & 0xff) / 255f;
+                        float itemR = ((itemColor >> 0x10) & 0xff) / 255f;
+                        float itemG = ((itemColor >> 0x08) & 0xff) / 255f;
+                        float itemB = ((itemColor >> 0x00) & 0xff) / 255f;
+
+                        // Blend item color and base color using item color's alpha value
+                        int compositeR = Math.clamp(Math.round(255f * (itemA * itemR + (1f - itemA) * baseR)), 0, 255);
+                        int compositeG = Math.clamp(Math.round(255f * (itemA * itemG + (1f - itemA) * baseG)), 0, 255);
+                        int compositeB = Math.clamp(Math.round(255f * (itemA * itemB + (1f - itemA) * baseB)), 0, 255);
+
+                        int colorToSet = (0xff << 0x18) | (compositeR << 0x10) |
+                                   (compositeG << 0x08) | (compositeB << 0x00);
 
                         image.setRGB(
                                 backgroundStartX + IMAGE_PADDING + imageX,
@@ -292,7 +315,7 @@ public class BingoCardItemFactory {
                     }
 
                     // Retrieve the color of the pixels we need to set
-                    int colorToSet = ColorUtil.chatColorToInt(collector.getColor());
+                    int colorToSet = ColorUtil.textColorToInt(collector.getColor());
 
                     for (int indicatorX = indicatorStartX; indicatorX < indicatorStartX + TEAM_INDICATOR_SIZE; indicatorX++) {
                         for (int indicatorY = indicatorStartY; indicatorY < indicatorStartY + TEAM_INDICATOR_SIZE; indicatorY++) {
@@ -313,4 +336,19 @@ public class BingoCardItemFactory {
         return image;
     }
 
+    /**
+     * Whether the given item stack is a bingo card created by this factory.
+     * @param itemStack The item stack to check.
+     * @return True if the item stack is a bingo card, false otherwise.
+     */
+    public boolean isBingoCard(ItemStack itemStack) {
+        return createdBingoCards.contains(itemStack);
+    }
+
+    /**
+     * Clears the set of bingo cards that this factory created.
+     */
+    public void clearCreatedBingoCards() {
+        createdBingoCards.clear();
+    }
 }

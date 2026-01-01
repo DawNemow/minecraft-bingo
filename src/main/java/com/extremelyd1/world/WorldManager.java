@@ -4,18 +4,18 @@ import com.extremelyd1.game.Game;
 import com.extremelyd1.world.generation.PreGenerationManager;
 
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkStatus;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.craftbukkit.v1_20_R1.CraftServer;
+import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.generator.structure.StructureType;
-import org.bukkit.craftbukkit.v1_20_R1.CraftChunk;
+import org.bukkit.craftbukkit.CraftChunk;
 import org.bukkit.util.StructureSearchResult;
 
 import java.lang.reflect.Field;
@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Random;
 
 public class WorldManager implements Listener {
+    private static final int StructureSearchRadius = 3000;
 
     /**
      * The game instance.
@@ -51,7 +52,7 @@ public class WorldManager implements Listener {
     public WorldManager(Game game) throws IllegalArgumentException {
         this.game = game;
 
-        if (game.getConfig().isBorderEnabled() && game.getConfig().isOverrideWorldGeneration()) {
+        if (game.getConfig().isBorderEnabled() && game.getConfig().shouldGenerateEmptyChunks()) {
             Server server = Bukkit.getServer();
             CraftServer craftServer = (CraftServer) server;
 
@@ -63,8 +64,9 @@ public class WorldManager implements Listener {
                 configuration.set("worlds.world.generator", game.getPlugin().getName());
                 configuration.set("worlds.world_nether.generator", game.getPlugin().getName());
             } catch (NoSuchFieldException | IllegalAccessException e) {
-                Game.getLogger().severe("Could not set generator in Bukkit configuration");
-                e.printStackTrace();
+                Game.getLogger().severe(
+                        "Could not set generator in Bukkit configuration, exception:\n%s".formatted(e)
+                );
             }
         }
     }
@@ -79,10 +81,11 @@ public class WorldManager implements Listener {
 	        // fallen's fork
 	        if (this.game.getConfig().isAutoSaveDisabled()) {
 	            world.setAutoSave(false);
-	        }
-            world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-            world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+            }
+            world.setGameRule(GameRules.SPAWN_MOBS, false);  // GameRule.DO_MOB_SPAWNING
+            world.setGameRule(GameRules.ADVANCE_TIME, false);  // GameRule.DO_DAYLIGHT_CYCLE
+            world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);  // GameRule.ANNOUNCE_ADVANCEMENTS
+            world.setGameRule(GameRules.LOCATOR_BAR, false);  // fallen's fork: 1.21.6+ thing, disable it
             world.setTime(0);
 
             // If the server is in pre-generation mode, create manager
@@ -110,7 +113,8 @@ public class WorldManager implements Listener {
 	        if (this.game.getConfig().isAutoSaveDisabled()) {
                 world.setAutoSave(false);
 	        }
-            world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+            world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);  // GameRule.ANNOUNCE_ADVANCEMENTS
+            world.setGameRule(GameRules.LOCATOR_BAR, false);  // fallen's fork: 1.21.6+ thing, disable it
 
             if (game.getConfig().isBorderEnabled()) {
                 Game.getLogger().info("Setting nether world border...");
@@ -120,7 +124,8 @@ public class WorldManager implements Listener {
         } else if (world.getEnvironment().equals(World.Environment.THE_END) && this.end == null) {
             this.end = world;
 
-            world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+            world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);  // GameRule.ANNOUNCE_ADVANCEMENTS
+            world.setGameRule(GameRules.LOCATOR_BAR, false);  // fallen's fork: 1.21.6+ thing, disable it
         }
 
         if (!this.game.getGameBoardManager().isInitialized()) {
@@ -140,7 +145,6 @@ public class WorldManager implements Listener {
                     world,
                     StructureType.STRONGHOLD,
                     net.minecraft.world.level.levelgen.structure.StructureType.STRONGHOLD,
-                    3000,
                     this.game.getConfig().getOverworldBorderSize()
             );
         } else if (world.getEnvironment().equals(World.Environment.NETHER)) {
@@ -148,7 +152,6 @@ public class WorldManager implements Listener {
                     world,
                     StructureType.FORTRESS,
                     net.minecraft.world.level.levelgen.structure.StructureType.FORTRESS,
-                    3000,
                     this.game.getConfig().getNetherBorderSize()
             );
         }
@@ -157,17 +160,16 @@ public class WorldManager implements Listener {
     /**
      * Sets the world border with given size in the given world ensuring that the closest structure given by
      * structureType and structureName are within this border
-     * @param world The world in which to set the border
+     *
+     * @param world               The world in which to set the border
      * @param bukkitStructureType The bukkit type of structure that needs to be encompassed in this border
-     * @param nmsStructureType The internal NMS type of the structure
-     * @param searchRadius The radius for which to search for the structure
-     * @param size The size of the border
+     * @param nmsStructureType    The internal NMS type of the structure
+     * @param size                The size of the border
      */
     private <S extends Structure> void setWorldBorder(
             World world,
             StructureType bukkitStructureType,
             net.minecraft.world.level.levelgen.structure.StructureType<S> nmsStructureType,
-            int searchRadius,
             int size
     ) {
         Game.getLogger().info("Locating structure " + bukkitStructureType.getKey() + " to determine border center");
@@ -175,13 +177,13 @@ public class WorldManager implements Listener {
         StructureSearchResult structureSearchResult = world.locateNearestStructure(
                 new Location(world, 0, 0, 0),
                 bukkitStructureType,
-                searchRadius,
+                StructureSearchRadius,
                 false
         );
 
         if (structureSearchResult == null) {
-            Game.getLogger().warning("Could not find structure " + bukkitStructureType
-                    + " within " + searchRadius
+            Game.getLogger().warning("Could not find structure " + bukkitStructureType.getKey()
+                    + " within " + StructureSearchRadius
                     + " blocks in world type " + world.getEnvironment()
             );
             return;
@@ -201,11 +203,6 @@ public class WorldManager implements Listener {
         // Get the structure start map from the NMS Chunk
         // Suppress warnings are again needed due to generic cast and type erasure
         Map<Structure, StructureStart> structureStartMap = chunk.getAllStarts();
-
-        if (structureStartMap == null) {
-            Game.getLogger().warning("Structure start map is null");
-            return;
-        }
 
         StructureStart structureStart = null;
 
@@ -255,6 +252,12 @@ public class WorldManager implements Listener {
         int centerX = random.nextInt(centerMaxX - centerMinX + 1) + centerMinX;
         int centerZ = random.nextInt(centerMaxZ - centerMinZ + 1) + centerMinZ;
 
+        Game.getLogger().info("Setting world border at x: %s, z: %s, with size: %s".formatted(
+                centerX,
+                centerZ,
+                size
+        ));
+
         WorldBorder border = world.getWorldBorder();
         border.setCenter(centerX, centerZ);
         border.setSize(size);
@@ -264,8 +267,8 @@ public class WorldManager implements Listener {
      * Resets the gamerules of the overworld to default vanilla behaviour
      */
     public void onGameStart() {
-        world.setGameRule(GameRule.DO_MOB_SPAWNING, true);
-        world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, true);
+        world.setGameRule(GameRules.SPAWN_MOBS, true);  // GameRule.DO_MOB_SPAWNING
+        world.setGameRule(GameRules.ADVANCE_TIME, true);  // GameRule.DO_DAYLIGHT_CYCLE
     }
 
     /**

@@ -1,22 +1,16 @@
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 
 plugins {
     `java-library`
-    id("io.papermc.paperweight.userdev") version "1.5.5"
-}
-
-repositories {
-    maven {
-        url = uri("https://papermc.io/repo/repository/maven-public/")
-    }
+    id("io.papermc.paperweight.userdev") version "2.0.0-beta.17"
 }
 
 dependencies {
-    paperweight.paperDevBundle("1.20.1-R0.1-SNAPSHOT")
+    paperweight.paperDevBundle("1.21.11-R0.1-SNAPSHOT")
 }
 
 tasks {
@@ -26,10 +20,10 @@ tasks {
 
     compileJava {
         options.encoding = Charsets.UTF_8.name()
-        options.release.set(17)
+        options.release.set(21)
     }
 }
 
 group = "com.extremelyd1"
-version = "1.10.0-fallen.6"
+version = "1.12.1-fallen.1"
 description = "MinecraftBingo"

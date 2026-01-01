@@ -1,29 +1,45 @@
 package com.extremelyd1.gameboard.boardEntry;
 
+import net.kyori.adventure.text.Component;
+import org.intellij.lang.annotations.RegExp;
+
 /**
- * Represents an dynamic entry on the scoreboard that can change its value
- * @param <T> The type of the dynamic value
+ * Represents a dynamic entry on the scoreboard that can change its value.
+ * If used with a Component as value, will append the value component to the end of the given base component.
+ * @param <T> The type of the dynamic value.
  */
 public class DynamicBoardEntry<T> extends BoardEntry {
+    /**
+     * The replacement placeholder string that will be replaced with the value of this entry.
+     */
+    @RegExp
+    public static final String replacePlaceholder = "%s";
 
-    private T value;
+    /**
+     * The base component that contains the replaceable or acts as the prefix for a value.
+     */
+    private final Component baseComponent;
 
-    public DynamicBoardEntry(String format, T value) {
-        super(format);
+    public DynamicBoardEntry(Component component, T value) {
+        super(null);
 
-        this.value = value;
+        baseComponent = component;
+
+        setValue(value);
     }
 
-    public T getValue() {
-        return value;
-    }
-
+    /**
+     * Set the value for this dynamic entry. This will immediately update the entry on the scoreboard.
+     * @param value The value to set.
+     */
     public void setValue(T value) {
-        this.value = value;
-    }
+        if (value instanceof Component valueComponent) {
+            this.score.customName(baseComponent.append(valueComponent));
+            return;
+        }
 
-    public String getString() {
-        return String.format(this.string, this.value);
+        this.score.customName(baseComponent.replaceText(
+                builder -> builder.match(replacePlaceholder).replacement(String.valueOf(value)).once()
+        ));
     }
-
 }

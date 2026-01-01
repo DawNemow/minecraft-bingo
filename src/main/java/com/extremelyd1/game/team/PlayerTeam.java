@@ -1,6 +1,6 @@
 package com.extremelyd1.game.team;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
 
 /**
@@ -21,12 +21,17 @@ public class PlayerTeam extends Team {
     // fallen's fork: add for "quidditch" mode
     private boolean gotGoldenSnitch = false;
 
-    public PlayerTeam(String name, ChatColor color) {
+    public PlayerTeam(String name, NamedTextColor color) {
         super(name, color, false);
     }
 
     public void incrementCollected() {
         ++numCollected;
+    }
+
+    // fallen's fork: add "hold" mode
+    public void decrementCollected() {
+        --numCollected;
     }
 
     public int getNumCollected() {

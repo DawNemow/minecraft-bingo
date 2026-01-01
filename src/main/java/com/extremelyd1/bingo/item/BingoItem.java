@@ -40,6 +40,11 @@ public class BingoItem {
         collectors.add(team);
     }
 
+    // fallen's fork: add "hold" mode
+    public void removeCollector(PlayerTeam team) {
+        collectors.remove(team);
+    }
+
     /**
      * Check whether a team has collected the item
      * @param team The team

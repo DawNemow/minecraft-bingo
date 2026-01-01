@@ -24,6 +24,16 @@ but the team that triggers the bingo can get a Golden Snitch score bonus (can be
 - Add config `default-win-condition-is-quidditch`, to set the default mode from `lines` to `quidditch`
 - Add config `quidditch-golden-snitch-bonus` to adjust the extra bonus for the team who gets bingo (default `1`)
 
+### Hold Mode
+
+Hold mode is an extra feature switch that can be applied on any mode.
+With hold mode enabled, players need to hold their collected bingo items inside their inventory.
+If any collected bingo item is dropped, it will roll back to the uncollected state
+
+Items inside shulker boxes and bundles are also considered as "held by the player"
+
+- Add config `hold-mode` as the switch (default `False`)
+
 ### QOL++
 
 - Show num & row collected of all teams in tab list, so you don't have to count the dots in the bingo card
@@ -35,20 +45,23 @@ but the team that triggers the bingo can get a Golden Snitch score bonus (can be
   - Show collector team amount with item count (`count = 10 + n`, iff. `n > 0`)
 - Reset player time since reset stat on game start
 - Add in-game notification. When a player right-click or left-click the items displayed in the bingo card inventory, a message when be sent to notify the team.
+- Add a log message showing the game ends
+- Add nested item support: items inside shulker boxes or bundles are considered as collected as well
 
 ### Fixes
 
 - Fix double timer running by entering double `/start` and double game starting
 - Fix existing spectator player still being in survival mode when join in mid-game
+- Fix possible bingo card duplication after player respawn
 
 ## What is minecraft bingo?
 Minecraft Bingo is a gamemode in Minecraft in which teams battle in order to collect items on their bingo card.
 The first team to reach a completed row, column or diagonal wins the game.
-Collecting items is simply done through the vanilla game experience of minecraft.
+Collecting items is simply done through the vanilla game experience of Minecraft.
 
 ## Usage
 Players that have OP on the server have access to all commands. 
-Before being able to start the game, a player needs to create teams with the /team command. 
+Before being able to start the game, a player needs to create teams with the `/team` command. 
 Other settings can be configured as explained in the commands section below. 
 As soon as the game is started, teams are scattered across the map (players within teams are grouped together). 
 The teams work together to gather the items on their bingo card. 
@@ -59,13 +72,8 @@ Note that the bingo card can be right-clicked in order to view which items need 
 
 ## Install
 Download the [latest release](https://github.com/Extremelyd1/minecraft-bingo/releases/latest) or compile it yourself using Gradle.
-The plugin requires either a [Spigot](https://www.spigotmc.org/) or [Paper](https://papermc.io/) server to run.
+The plugin requires a [Paper](https://papermc.io/) server to run.
 Place the `MinecraftBingo-[version].jar` file in the plugins directory of your server.
-Unzip the `item_data.zip` into the `<server>/plugins/MinecraftBingo/` directory.
-If done successfully, you should have the following two directories:
-- `<server>/plugins/MinecraftBingo/item_data/`
-- `<server>/plugins/MinecraftBingo/item_data/images/`
-
 The first time you run the plugin a config file will be generated in `<server>/plugins/MinecraftBingo`, in which you can edit some configuration settings.
 
 ## Commands
@@ -83,7 +91,7 @@ The first time you run the plugin a config file will be generated in `<server>/p
 #### Configuration commands  
 - `/pvp` Enable/disable PvP
 - `/maintenance` Enable maintenance mode (this will disallow all non-OP players from joining)
-- `/wincondition <full|lines|quidditch|lockout> [number]` Change the wincondition to either a full card, a number of lines (rows, columns or diagonals) to complete in order to win or lockout. 
+- `/wincondition <full|lines|quidditch|lockout> [number]` Change the win condition to either a full card, a number of lines (rows, columns or diagonals) to complete in order to win or lockout. 
   In case of 'lines' or 'lockout' you can specify a number to indicate how many lines needed to be completed, or after how many collections an item locks.  
   For 'quidditch' mode, see the [Quidditch Mode](#quidditch-mode) section above.
   (alias: `/wincon`)
@@ -103,7 +111,6 @@ The first time you run the plugin a config file will be generated in `<server>/p
 
 ## World generation
 The plugin offers the ability to pre-generate worlds to reduce chunk generation lag during gameplay.
-This feature can be used both on [Spigot](https://www.spigotmc.org/) and on [Paper](https://papermc.io/), but will be significantly faster on Paper.
 The following command can be used to manage this:
 - `/generate <start world number> <number of worlds>` Start pre-generating the given number of worlds from the given index and storing them in zip format
 - `/generate stop` Stop pre-generating worlds  

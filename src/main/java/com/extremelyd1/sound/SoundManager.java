@@ -38,6 +38,27 @@ public class SoundManager {
         }
     }
 
+    // fallen's fork: add "hold" mode
+    public void broadcastItemDropped(PlayerTeam team) {
+        for (Player player: Bukkit.getOnlinePlayers()) {
+            if (team.contains(player)) {
+                player.playSound(
+                        player.getLocation(),
+                        Sound.BLOCK_NOTE_BLOCK_COW_BELL,
+                        0.8f,
+                        0f
+                );
+            } else {
+                player.playSound(
+                        player.getLocation(),
+                        Sound.BLOCK_NOTE_BLOCK_BASS,
+                        1f,
+                        2f
+                );
+            }
+        }
+    }
+
     /**
      * Broadcast the start sound
      */
@@ -67,16 +88,18 @@ public class SoundManager {
             );
         }
     }
+
     /**
      * Broadcast the notification sound
+     * <p>
+     * fallen's fork: in-game notification by clicking items in the bingo card
      */
-    public void broadcastnotification(Player player) {
-            player.playSound(
-                    player.getLocation(),
-                    Sound.ENTITY_CAT_AMBIENT,
-                    0.5f,
-                    1f
-            );
-        }
-
+    public void broadcastNotification(Player player) {
+        player.playSound(
+                player.getLocation(),
+                Sound.ENTITY_CAT_AMBIENT,
+                0.5f,
+                1f
+        );
+    }
 }
