@@ -81,10 +81,11 @@ public class WorldManager implements Listener {
 	        // fallen's fork
 	        if (this.game.getConfig().isAutoSaveDisabled()) {
 	            world.setAutoSave(false);
-	        }
+            }
             world.setGameRule(GameRules.SPAWN_MOBS, false);  // GameRule.DO_MOB_SPAWNING
             world.setGameRule(GameRules.ADVANCE_TIME, false);  // GameRule.DO_DAYLIGHT_CYCLE
             world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);  // GameRule.ANNOUNCE_ADVANCEMENTS
+            world.setGameRule(GameRules.LOCATOR_BAR, false);  // fallen's fork: 1.21.6+ thing, disable it
             world.setTime(0);
 
             // If the server is in pre-generation mode, create manager
@@ -113,6 +114,7 @@ public class WorldManager implements Listener {
                 world.setAutoSave(false);
 	        }
             world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);  // GameRule.ANNOUNCE_ADVANCEMENTS
+            world.setGameRule(GameRules.LOCATOR_BAR, false);  // fallen's fork: 1.21.6+ thing, disable it
 
             if (game.getConfig().isBorderEnabled()) {
                 Game.getLogger().info("Setting nether world border...");
@@ -123,6 +125,7 @@ public class WorldManager implements Listener {
             this.end = world;
 
             world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);  // GameRule.ANNOUNCE_ADVANCEMENTS
+            world.setGameRule(GameRules.LOCATOR_BAR, false);  // fallen's fork: 1.21.6+ thing, disable it
         }
 
         if (!this.game.getGameBoardManager().isInitialized()) {
