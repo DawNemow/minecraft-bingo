@@ -139,6 +139,7 @@ public class GameBoardManager {
             pregameBoard.broadcast();
         } else if (game.getState().equals(Game.State.IN_GAME)) {
             for (IngameBoard ingameBoard : inGameBoards.values()) {
+                ingameBoard.updateTeamColors();  // fallen's fork: fix team not applied on game started
                 ingameBoard.broadcast();
             }
         }
