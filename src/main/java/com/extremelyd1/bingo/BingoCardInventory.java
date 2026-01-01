@@ -56,16 +56,15 @@ public class BingoCardInventory {
                 if (teams.isEmpty()) {
                     lores.add(Component.text("Collected by no team").color(NamedTextColor.GRAY));
                 } else {
-                    var text = Component.text("Collected by:").color(NamedTextColor.GRAY);
+                    lores.add(Component.text("Collected by:").color(NamedTextColor.GRAY));
                     for (PlayerTeam team : teams) {
-                        text = text.append(Component
+                        lores.add(Component
                                 .text("- ")
                                 .color(NamedTextColor.DARK_GRAY)
                                 .append(Component.text(team.getName()).color(team.getColor()))
                                 .append(Component.text(" team").color(NamedTextColor.GRAY))
                         );
                     }
-                    lores.add(text);
                 }
                 itemStack.lore(lores);
                 if (!teams.isEmpty()) {
